@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>신라대학교 생년월일 AI 사주·취향 학과 매칭소 (인생네컷 에디션)</title>
+    <!-- html2canvas 라이브러리 CDN 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+        :root {
+            --bg-grad: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            --accent: #fbbf24;
+            --primary: #4f46e5;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background: var(--bg-grad);
+            color: #f8fafc;
+            font-family: 'Noto Sans KR', sans-serif;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
+        #app-wrapper {
+            width: 1050px; max-width: 96vw;
+            height: 96vh; max-height: 920px;
+            background: rgba(15, 23, 42, 0.96);
+            border: 4px solid #fbbf24;
+            border-radius: 25px;
+            display: flex; flex-direction: column;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 25px 60px rgba(251, 191, 36, 0.3);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px dashed rgba(251, 191, 36, 0.4);
+            padding-bottom: 10px; margin-bottom: 12px; flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0; font-family: 'Jua', sans-serif; font-size: 25px;
+            color: #fbbf24;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        p.subtitle {
+            margin: 4px 0 0 0; font-size: 13px; color: #cbd5e1; font-family: 'Jua', sans-serif;
+        }
+
+        .content-area {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow-y: auto; padding-bottom: 10px;
+        }
+
+        #step-input {
+            display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 600px;
+        }
+
+        .input-card {
+            width: 100%; background: rgba(30, 27, 75, 0.85);
+            border: 2px solid #818cf8; border-radius: 16px; padding: 15px; text-align: center;
+        }
+
+        .input-card label {
+            display: block; font-family: 'Jua', sans-serif; font-size: 16px; color: #34d399; margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            width: 80%; padding: 8px 14px; border-radius: 10px; border: 2px solid #cbd5e1;
+            font-size: 15px; font-family: 'Noto Sans KR', sans-serif; text-align: center; outline: none; background: #fff; color: #1e293b;
+        }
+
+        /* 생년월일 분할 입력 스타일 (연, 월, 일 자동 포커스 이동) */
+        .birth-inputs {
+            display: flex; justify-content: center; gap: 8px; align-items: center;
+        }
+        .birth-inputs input {
+            padding: 8px; border-radius: 10px; border: 2px solid #cbd5e1;
+            font-size: 16px; font-family: 'Noto Sans KR', sans-serif; text-align: center; outline: none; background: #fff; color: #1e293b;
+        }
+        .birth-year { width: 110px; }
+        .birth-month, .birth-day { width: 75px; }
+        .birth-inputs span { font-family: 'Jua', sans-serif; color: #cbd5e1; font-size: 15px; }
+
+        .taste-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; margin-top: 4px;
+        }
+
+        .taste-btn {
+            background: #312e81; border: 2px solid #818cf8; color: white; padding: 9px;
+            border-radius: 10px; font-family: 'Jua', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s;
+        }
+        .taste-btn:hover, .taste-btn.selected {
+            background: #4f46e5; border-color: #fbbf24; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(79,70,229,0.4);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #1e1b4b; border: none; padding: 12px 35px; border-radius: 30px;
+            font-family: 'Jua', sans-serif; font-size: 18px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4); margin-top: 5px;
+        }
+        .submit-btn:hover { transform: scale(1.05); }
+
+        #step-loading {
+            display: none; flex-direction: column; align-items: center; gap: 20px; text-align: center;
+        }
+        .spinner { font-size: 60px; animation: spin 1.5s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #step-result {
+            display: none; width: 100%; max-width: 650px; flex-direction: column; gap: 12px; align-items: center; animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #photocard-frame {
+            width: 100%; background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+            border: 4px solid #fbbf24; border-radius: 20px; padding: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 12px; position: relative;
+        }
+
+        .photo-header {
+            text-align: center; border-bottom: 2px dashed rgba(251,191,36,0.3); padding-bottom: 8px;
+        }
+        .photo-header h3 { margin: 0; font-family: 'Jua', sans-serif; font-size: 20px; color: #fbbf24; }
+        .photo-header p { margin: 2px 0 0 0; font-size: 11px; color: #94a3b8; font-family: 'Jua', sans-serif; }
+
+        .photo-main-box {
+            background: rgba(30, 27, 75, 0.9); border: 2px solid #818cf8; border-radius: 14px;
+            padding: 15px; display: flex; gap: 15px; align-items: center;
+        }
+
+        .photo-avatar {
+            width: 80px; height: 80px; background: #0f172a; border: 3px dashed #fbbf24; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 42px; flex-shrink: 0;
+        }
+
+        .photo-info h2 { margin: 0; font-family: 'Jua', sans-serif; font-size: 20px; color: #fbbf24; }
+        .photo-major { display: inline-block; background: #4f46e5; color: white; padding: 3px 10px; border-radius: 8px; font-family: 'Jua', sans-serif; font-size: 12px; margin-top: 4px; }
+        .photo-slogan { margin: 4px 0 0 0; font-size: 11px; color: #cbd5e1; font-weight: 500; }
+
+        .photo-saju-box {
+            background: rgba(15, 23, 42, 0.95); border: 2px solid #34d399; border-radius: 12px; padding: 12px;
+        }
+        .photo-saju-title { font-family: 'Jua', sans-serif; color: #34d399; font-size: 13px; margin-bottom: 3px; }
+        .photo-saju-desc { font-size: 12px; line-height: 1.4; color: #e2e8f0; }
+
+        .photo-footer-brand {
+            text-align: center; font-size: 10px; color: #94a3b8; font-family: 'Jua', sans-serif; margin-top: 2px;
+        }
+
+        .action-buttons {
+            display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 5px;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white; border: none; padding: 10px 25px; border-radius: 20px;
+            font-family: 'Jua', sans-serif; font-size: 15px; cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        .download-btn:hover { transform: scale(1.05); }
+
+        .restart-btn {
+            background: #4f46e5; color: white; border: none; padding: 10px 25px; border-radius: 20px;
+            font-family: 'Jua', sans-serif; font-size: 15px; cursor: pointer; transition: all 0.2s;
+        }
+        .restart-btn:hover { background: #4338ca; }
+    </style>
+</head>
+<body>
+
+    <div id="app-wrapper">
+        <header>
+            <h1>🔮 신라대학교 AI 사주·취향 학과 매칭소 <span style="font-size: 12px; background: #4f46e5; padding: 2px 8px; border-radius: 10px;">인생네컷 에디션</span></h1>
+            <p class="subtitle">생년월일(사주)과 취향을 결합해 운명의 학과를 찾고, 예쁜 포토 카드로 저장해보세요!</p>
+        </header>
+
+        <div class="content-area">
+            <!-- 1단계: 입력 -->
+            <div id="step-input">
+                <div class="input-card">
+                    <label>✨ 이름을 입력하세요</label>
+                    <input type="text" id="user-name" placeholder="예: 김신라" autocomplete="off">
+                </div>
+
+                <div class="input-card">
+                    <label>📅 태어난 생년월일을 입력하세요 (연·월·일)</label>
+                    <div class="birth-inputs">
+                        <input type="text" id="birth-year" class="birth-year" placeholder="YYYY" maxlength="4" oninput="autoTab(this, 'birth-month', 4)">
+                        <span>년</span>
+                        <input type="text" id="birth-month" class="birth-month" placeholder="MM" maxlength="2" oninput="autoTab(this, 'birth-day', 2)">
+                        <span>월</span>
+                        <input type="text" id="birth-day" class="birth-day" placeholder="DD" maxlength="2" oninput="autoTab(this, null, 2)">
+                        <span>일</span>
+                    </div>
+                </div>
+
+                <div class="input-card">
+                    <label>🎯 평소 가장 끌리는 나의 관심 취향은?</label>
+                    <div class="taste-grid">
+                        <button class="taste-btn selected" onclick="selectTaste(0, this)">✈️ 하늘·비행기·글로벌 이동</button>
+                        <button class="taste-btn" onclick="selectTaste(1, this)">🔥 정의구현·안전·치안·소방</button>
+                        <button class="taste-btn" onclick="tasteBtnClick(2, this)">🩺 보건·의료·생명·간호</button>
+                        <button class="taste-btn" onclick="tasteBtnClick(3, this)">✍️ 웹툰·게임·디자인·콘텐츠</button>
+                    </div>
+                </div>
+
+                <button class="submit-btn" onclick="runBirthdaySajuMatch()">🔮 사주 팔자 & 취향 맞춤 분석 시작!</button>
+            </div>
+
+            <!-- 2단계: 로딩 -->
+            <div id="step-loading">
+                <div class="spinner">📸</div>
+                <div style="font-family: 'Jua', sans-serif; font-size: 20px; color: #fbbf24;" id="loading-text">생년월일 음양오행 및 사주 기운 산출 중...</div>
+                <div style="font-size: 12px; color: #94a3b8;">신라대학교 수시모집요강 데이터와 정밀 매칭하고 있습니다.</div>
+            </div>
+
+            <!-- 3단계: 결과 및 인생네컷 포토카드 -->
+            <div id="step-result">
+                <!-- 캡처 대상이 되는 포토카드 프레임 -->
+                <div id="photocard-frame">
+                    <div class="photo-header">
+                        <h3>✨ SILLA UNIV. CAREER PHOTO CARD ✨</h3>
+                        <p id="photo-date-badge">2027 수시모집 맞춤 진로 인증서</p>
+                    </div>
+
+                    <div class="photo-main-box">
+                        <div class="photo-avatar" id="res-emoji">🧑‍✈️</div>
+                        <div class="photo-info">
+                            <h2 id="res-name-title">김신라님의 운명의 페르소나</h2>
+                            <div class="photo-major" id="res-major">항공운항학과 · 클라우드 마스터 기장</div>
+                            <div class="photo-slogan" id="res-slogan">"푸른 하늘과 전 세계 하늘길을 안전하게 지배하는 하늘의 지휘자!"</div>
+                        </div>
+                    </div>
+
+                    <div class="photo-saju-box">
+                        <div class="photo-saju-title" id="res-saju-title">📜 생년월일 오행 사주 & 추천 진로</div>
+                        <div class="photo-saju-desc" id="res-saju">사주 풀이 내용</div>
+                    </div>
+
+                    <div class="photo-footer-brand">
+                        🎓 신라대학교 입학처 · 내 운명의 학과 찾기 프로젝트
+                    </div>
+                </div>
+
+                <!-- 하단 액션 버튼 그룹 -->
+                <div class="action-buttons">
+                    <button class="download-btn" onclick="downloadPhotoCard()">📸 인생네컷 카드 저장하기</button>
+                    <button class="restart-btn" onclick="resetApp()">🔄 다시 하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedTasteIdx = 0;
+
+        function selectTaste(idx, btn) {
+            selectedTasteIdx = idx;
+            document.querySelectorAll('.taste-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+        function tasteBtnClick(idx, btn) { selectTaste(idx, btn); }
+
+        // 연도 4자리 입력 시 월(month)로 자동 포커스 이동하는 함수
+        function autoTab(current, targetId, maxLen) {
+            // 숫자 외의 문자는 제거
+            current.value = current.value.replace(/[^0-9]/g, '');
+            if (current.value.length >= maxLen && targetId) {
+                document.getElementById(targetId).focus();
+            }
+        }
+
+        const departmentProfiles = [
+            {
+                name: "항공운항학과", emoji: "🧑‍✈️", charName: "클라우드 마스터 기장",
+                slogan: "푸른 하늘과 전 세계 하늘길을 안전하게 지배하는 하늘의 지휘자!",
+                sajuBase: "하늘의 기운(천기)을 강하게 타고난 사주입니다. 지상에 머물기보다 넓은 세계로 뻗어나갈 때 재능이 만개하며, 빠른 결단력과 리더십이 운명을 성공으로 이끕니다.",
+                jobs: "국내외 민간항공사(대한항공, 에어부산 등) 부기장 채용 연계, 군 조종 장교(공군·해군)"
+            },
+            {
+                name: "소방안전학과", emoji: "🧯", charName: "불꽃 파이터 소방관",
+                slogan: "어떤 재난과 화마 속에서도 망설임 없이 뛰어들어 시민의 안전을 지킨다!",
+                sajuBase: "화(火)의 기운과 정의로운 의협심이 충만한 사주입니다. 남들이 위험을 피할 때 앞장서서 타인을 구명하는 운명을 가졌으며, 강인한 체력과 투지가 대길(大吉)을 부릅니다.",
+                jobs: "119 소방공무원 (경력경쟁채용 혜택), 소방간부후보생, 공공기관 안전관리 전문가"
+            },
+            {
+                name: "간호학과", emoji: "🩺", charName: "생명 수호 화이트 나이트",
+                slogan: "환자의 가장 고통스러운 순간에 따뜻한 손길로 치유의 기적을 선물한다!",
+                sajuBase: "수(水)와 목(木)의 따뜻한 생명력과 치유의 기운을 타고난 사주입니다. 섬세한 공감 능력과 타인을 보살피는 타고난 성품이 의료·보건 분야에서 최고의 영예를 안겨줍니다.",
+                jobs: "대학병원 및 대형 종합병원 임상 간호사, 학교 보건교사, 간호직 공무원"
+            },
+            {
+                name: "웹툰학과", emoji: "✍️", charName: "웹툰계의 거장 작가",
+                slogan: "펜 끝 하나로 수백만 독자의 심장을 울리고 웃기는 스토리텔링의 마술사!",
+                sajuBase: "창의력과 예술적 영감을 관장하는 문창성(文昌星)이 명궁에 자리 잡은 사주입니다. 상상력을 시각화하는 능력이 탁월하며, 대중을 매료시키는 강력한 스토리텔링 에너지를 품고 있습니다.",
+                jobs: "네이버·카카오 메이저 웹툰 플랫폼 정식 연재 작가, 웹툰 전문 제작 스튜디오 PD"
+            }
+        ];
+
+        function runBirthdaySajuMatch() {
+            const nameInput = document.getElementById('user-name').value.trim();
+            const yearVal = document.getElementById('birth-year').value.trim();
+            const monthVal = document.getElementById('birth-month').value.trim();
+            const dayVal = document.getElementById('birth-day').value.trim();
+
+            if (!nameInput) {
+                alert("이름을 입력해주세요!");
+                return;
+            }
+            if (!yearVal || yearVal.length !== 4 || !monthVal || !dayVal) {
+                alert("생년월일(연도 4자리, 월, 일)을 올바르게 모두 입력해주세요!");
+                return;
+            }
+
+            const birthInputStr = `${yearVal}-${monthVal.padStart(2, '0')}-${dayVal.padStart(2, '0')}`;
+
+            document.getElementById('step-input').style.display = 'none';
+            document.getElementById('step-loading').style.display = 'flex';
+
+            let loadingSteps = [
+                "📅 생년월일 기반 천간지지 및 오행 산출 중...",
+                "🔮 사주 팔자의 대운(大運) 기운과 취향 성향 대조 중...",
+                "📸 인생네컷 포토카드 디자인 렌더링 중..."
+            ];
+            let stepIdx = 0;
+            let interval = setInterval(() => {
+                stepIdx = (stepIdx + 1) % loadingSteps.length;
+                document.getElementById('loading-text').innerText = loadingSteps[stepIdx];
+            }, 800);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                document.getElementById('step-loading').style.display = 'none';
+                document.getElementById('step-result').style.display = 'flex';
+
+                let birthSum = 0;
+                for (let i = 0; i < birthInputStr.length; i++) {
+                    if (!isNaN(birthInputStr[i])) birthSum += parseInt(birthInputStr[i]);
+                }
+                
+                let finalIdx = (selectedTasteIdx + birthSum) % departmentProfiles.length;
+                let prof = departmentProfiles[finalIdx];
+
+                document.getElementById('res-name-title').innerText = `${nameInput}님의 운명의 페르소나`;
+                document.getElementById('res-emoji').innerText = prof.emoji;
+                document.getElementById('res-major').innerText = `${prof.name} · ${prof.charName}`;
+                document.getElementById('res-slogan').innerText = `"${prof.slogan}"`;
+                
+                let zodiacAnimals = ["원숭이", "닭", "개", "돼지", "쥐", "소", "호랑이", "토끼", "용", "뱀", "말", "양"];
+                let animal = zodiacAnimals[parseInt(yearVal) % 12];
+
+                document.getElementById('res-saju-title').innerText = `📜 [${yearVal}.${monthVal}.${dayVal} / ${animal}띠] 사주 & 추천 진로`;
+                document.getElementById('res-saju').innerText = `${nameInput}님은 ${animal}띠의 기운을 받아 ${prof.sajuBase} [추천 취업처] ${prof.jobs}`;
+            }, 2500);
+        }
+
+        // 인생네컷 포토카드 이미지 다운로드 함수 (html2canvas 활용)
+        function downloadPhotoCard() {
+            const cardElement = document.getElementById('photocard-frame');
+            const userName = document.getElementById('user-name').value.trim() || '신라인';
+
+            html2canvas(cardElement, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `신라대학교_진로사주카드_${userName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        function resetApp() {
+            document.getElementById('step-result').style.display = 'none';
+            document.getElementById('step-input').style.display = 'flex';
+            document.getElementById('user-name').value = '';
+            document.getElementById('birth-year').value = '';
+            document.getElementById('birth-month').value = '';
+            document.getElementById('birth-day').value = '';
+        }
+    </script>
+</body>
+</html>
